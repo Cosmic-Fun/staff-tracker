@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.cosmicplayer.stafftracker.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "GameMenuScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

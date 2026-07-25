@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "stafftracker",
+  "version": "${version}",
+  "name": "Staff Tracker",
+  "description": "A lightweight help counter for staff members. Press a key, count a helped player.",
+  "authors": [
+    "Cosmic Player"
+  ],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/stafftracker/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.cosmicplayer.stafftracker.StaffTrackerClient"
+    ]
+  },
+  "mixins": [
+    "stafftracker.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
+}
