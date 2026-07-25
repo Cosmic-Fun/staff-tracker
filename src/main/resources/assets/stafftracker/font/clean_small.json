@@ -2,7 +2,7 @@
   "providers": [
     {
       "type": "ttf",
-      "file": "stafftracker:inter.ttf",
+      "file": "stafftracker:inter-medium.ttf",
       "shift": [0.0, 0.0],
       "size": 6.5,
       "oversample": 4.0
