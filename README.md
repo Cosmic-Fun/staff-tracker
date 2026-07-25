@@ -2,6 +2,8 @@
 
 A lightweight, client side counter for staff members. Press a key each time you help a player. That is the whole mod.
 
+**[Download the latest jar](https://github.com/Cosmic-Fun/staff-tracker/releases/latest/download/stafftracker.jar)** and drop it in your mods folder.
+
 By Cosmic Player. All Rights Reserved. See LICENSE.
 
 ## Requirements
