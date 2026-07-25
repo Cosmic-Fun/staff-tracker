@@ -122,12 +122,10 @@ public final class CounterHud {
             y += 1 + scaled(5, 3);
         }
 
-        // With the label the count sits flush left under it. Without, it centers.
+        // The count always centers, with or without the label.
         int countSize = countSize();
         Text count = countText(config.hudView);
-        int countX = config.showLabel
-                ? padding
-                : (width - client.textRenderer.getWidth(count)) / 2;
+        int countX = (width - client.textRenderer.getWidth(count)) / 2;
         context.drawText(client.textRenderer, count,
                 countX, y + capHeight(countSize) - FONT_BASELINE, Theme.TEXT, false);
 
