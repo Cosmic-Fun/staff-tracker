@@ -51,6 +51,17 @@ public final class Theme {
         return Text.literal(value).styled(style -> style.withFont(FONT_BOLD));
     }
 
+    /**
+     * SemiBold text at an exact font size from the bundled ladder, sizes 4
+     * through 40. The HUD uses these so text renders at native resolution
+     * instead of being scale transformed, which looks broken on standard
+     * displays because font textures are sampled without filtering.
+     */
+    public static MutableText textBoldSized(String value, int size) {
+        StyleSpriteSource.Font font = new StyleSpriteSource.Font(StaffTrackerClient.id("clean_bold_" + size));
+        return Text.literal(value).styled(style -> style.withFont(font));
+    }
+
     /** Draws a flat rectangle with smooth rounded corners. */
     public static void roundedRect(DrawContext context, int x, int y, int width, int height, int radius, int color) {
         roundedRectEdges(context, x, y, width, height, radius, color, true, true);

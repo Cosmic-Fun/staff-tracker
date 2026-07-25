@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "stafftracker:inter-semibold.ttf",
+      "shift": [0.0, 0.0],
+      "size": 14.0,
+      "oversample": 2.0
+    }
+  ]
+}
