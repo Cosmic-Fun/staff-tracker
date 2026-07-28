@@ -1,56 +1,68 @@
-# Staff Tracker
+<h1>Staff Tracker <a href="https://github.com/Cosmic-Fun/staff-tracker/releases/latest/download/stafftracker.jar"><img align="right" src="https://img.shields.io/badge/Download-stafftracker.jar-B158E6?style=for-the-badge" alt="Download"></a></h1>
 
-A lightweight, client side counter for staff members. Press a key each time you help a player. That is the whole mod.
+A client side helper counter for staff. Press one key when you help a player and the mod keeps score. It also remembers who you helped and what the conversation was.
 
-**[Download the latest jar](https://github.com/Cosmic-Fun/staff-tracker/releases/latest/download/stafftracker.jar)** and drop it in your mods folder.
+## Mod Overview
 
-By Cosmic Player. All Rights Reserved. See LICENSE.
+- One keybind counts a helped player. The HUD flashes so you know it registered.
+- When you trigger a count, the mod looks at your recent private messages, figures out who you were helping, and saves the conversation from the last thirty minutes along with the planet each of you was on.
+- History is browsable by day, week, or month. Click into a day to see every player you helped that day.
+- A search box finds every logged interaction with a player by name.
+- Anything can be deleted: one interaction, a day, a week, or a whole month. Every delete first shows you exactly what is about to go. Undo takes one count off today and shows the conversation it removes.
 
-## Requirements
+## Preview
 
-- Minecraft 1.21.11
-- Fabric Loader 0.19.3+
-- Fabric API
+<p align="center">
+  <img src="screenshots/settings.png" width="49%" alt="The settings window">
+  <img src="screenshots/history.png" width="49%" alt="The history window">
+</p>
 
-## Usage
+<p align="center">
+  <img src="screenshots/chat.png" width="60%" alt="A logged conversation">
+</p>
 
-- Press the count keybind (default `H`) each time you help a player.
-- The counter shows on a small HUD panel. It flashes on each count.
-- Counts are stored per calendar day and roll over at midnight in the client's time zone.
-- Open the pause menu and click **Staff Tracker** in the top right to change settings.
+## Install
 
-## The window
+1. Install Fabric Loader 0.19.3 or newer for Minecraft 1.21.11.
+2. Put Fabric API in your mods folder.
+3. Hit the download button up top and drop `stafftracker.jar` in next to it.
 
-Everything lives in one window with a sidebar on the left: Settings, History, and Adjust HUD.
+## Using it
 
-- **Settings**: HUD on or off, label on or off, counter view (day, week, or month), and the count keybind.
-  The keybind supports mouse buttons and modifier combos like Ctrl Shift H, and is stored in the mod's own config.
-- **History**: totals by day, week, or month in a bordered list. Weeks run Sunday to Saturday.
-  Click a week or month to see its days. Click the back chevron to return.
-- **Adjust HUD**: drag the counter anywhere on screen. Scroll to resize it in one percent steps.
-- **Undo count**: removes one count from today, for accidental presses.
+- The default keybind is `H`. Change it in settings. Mouse buttons and combos like `Ctrl Shift H` work too.
+- Open the pause menu and click **Staff Tracker** in the top right for settings and history.
+- Counts roll over at midnight in your own time zone. Weeks run Sunday to Saturday.
+- **Adjust HUD** lets you drag the counter anywhere and scroll to resize it in one percent steps.
 
-## Data
+## Your data
 
-Everything is stored locally, nothing is sent anywhere.
+Everything is stored on your machine in `config/stafftracker/`:
 
-- `config/stafftracker/settings.json` holds the UI settings.
-- `config/stafftracker/data.json` holds the per day history.
+- `settings.json` holds the settings.
+- `data.json` holds the daily totals.
+- `logs/` holds one JSON file per day with the helped players and conversations.
 
-## Building
+One outside call: the player head icons in the history come from [mc-heads.net](https://mc-heads.net), fetched by username while you browse and only kept in memory. If a head cannot load you get a colored letter tile instead.
+
+## Building from source
 
 ```
 ./gradlew build
 ```
 
-The jar lands in `build/libs/`. Java 21 is required and is resolved automatically by the Gradle toolchain.
+Java 21 is required and the Gradle toolchain resolves it automatically. The jar lands in `build/libs/`.
 
-## Project layout
+Quick map of the code:
 
 - `StaffTrackerClient` wires everything up on client init.
-- `StaffTrackerConfig` and `HelpData` handle settings and counts, both saved as JSON.
+- `StaffTrackerConfig`, `HelpData`, and `InteractionLog` handle settings, counts, and conversation logs, all saved as JSON.
+- `MessageWatcher` reads private messages from chat and keeps the last thirty minutes.
 - `hud/CounterHud` draws the on screen panel.
-- `ui/` holds the custom widgets and screens. `Theme` has the shared colors and drawing helpers.
+- `ui/` holds the widgets and screens. `Theme` has the shared colors and shapes, `TextPainter` is the text renderer.
 - `mixin/GameMenuScreenMixin` adds the pause menu button.
 
-The UI uses the bundled Inter font (SIL OFL 1.1, license included in the jar) so text is smooth instead of pixelated.
+The UI draws with its own renderer using the bundled Inter font (SIL OFL 1.1, license included in the jar), so text and shapes stay sharp at any GUI scale on any display.
+
+---
+
+By Cosmic Player. All Rights Reserved, see [LICENSE](LICENSE).

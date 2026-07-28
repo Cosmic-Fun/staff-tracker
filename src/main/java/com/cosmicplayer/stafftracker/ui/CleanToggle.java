@@ -1,8 +1,7 @@
 package com.cosmicplayer.stafftracker.ui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.function.Consumer;
@@ -13,12 +12,14 @@ public class CleanToggle extends CleanWidget {
     private static final int PILL_HEIGHT = 10;
     private static final int KNOB_SIZE = 6;
 
+    private final String label;
     private final Consumer<Boolean> onChange;
     private boolean value;
     private float knob;
 
     public CleanToggle(int x, int y, int width, int height, String label, boolean value, Consumer<Boolean> onChange) {
-        super(x, y, width, height, Theme.text(label));
+        super(x, y, width, height, Text.literal(label));
+        this.label = label;
         this.value = value;
         this.knob = value ? 1.0f : 0.0f;
         this.onChange = onChange;
@@ -32,8 +33,7 @@ public class CleanToggle extends CleanWidget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        context.drawText(textRenderer, getMessage(), getX() + 2, getY() + (height - 8) / 2 + 1, Theme.TEXT, false);
+        TextPainter.drawInRow(context, label, getX() + 2, getY(), height, Theme.FONT_BODY, Theme.TEXT, false);
 
         knob = MathHelper.lerp(0.4f, knob, value ? 1.0f : 0.0f);
         int pillX = getX() + width - 2 - PILL_WIDTH;

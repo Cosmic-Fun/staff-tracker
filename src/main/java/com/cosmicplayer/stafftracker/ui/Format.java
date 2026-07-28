@@ -1,6 +1,8 @@
 package com.cosmicplayer.stafftracker.ui;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -10,6 +12,7 @@ public final class Format {
     private static final DateTimeFormatter MONTH_DAY = DateTimeFormatter.ofPattern("MMM d", Locale.US);
     private static final DateTimeFormatter MONTH_YEAR = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US);
     private static final DateTimeFormatter MONTH_ONLY = DateTimeFormatter.ofPattern("MMMM", Locale.US);
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.US);
 
     private Format() {
     }
@@ -17,6 +20,16 @@ public final class Format {
     /** adds a comma, so 1775 becomes "1,775". MERICA */
     public static String count(int value) {
         return String.format(Locale.US, "%,d", value);
+    }
+
+    /** A clock time like "18:42" in the local time zone. */
+    public static String time(long epochMillis) {
+        return TIME.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
+    }
+
+    /** A short date like "Jul 26". Used where space is tight. */
+    public static String monthDay(LocalDate date) {
+        return MONTH_DAY.format(date);
     }
 
     /** "Today", "Yesterday", or "Thu, Jul 23". Adds the year when it is not the current one. Just future proofing. */

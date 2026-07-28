@@ -63,19 +63,49 @@ public final class HelpData {
         save();
     }
 
-    /** Removes one count from today. Does nothing when today is already zero. */
+    /** Removes one count from today, along with its logged interaction. */
     public void undo() {
-        String today = LocalDate.now().toString();
-        Integer count = daily.get(today);
+        LocalDate today = LocalDate.now();
+        if (decrement(today)) {
+            InteractionLog.removeLast(today);
+        }
+    }
+
+    /** Removes one logged interaction and takes one off that day's count. */
+    public void deleteInteraction(LocalDate day, InteractionLog.Interaction interaction) {
+        decrement(day);
+        InteractionLog.remove(day, interaction);
+    }
+
+    /** Takes one count off the given day, removing the entry when it hits zero. */
+    private boolean decrement(LocalDate day) {
+        Integer count = daily.get(day.toString());
         if (count == null) {
-            return;
+            return false;
         }
         if (count <= 1) {
-            daily.remove(today);
+            daily.remove(day.toString());
         } else {
-            daily.put(today, count - 1);
+            daily.put(day.toString(), count - 1);
         }
         save();
+        return true;
+    }
+
+    /** Deletes one day's count and its interaction log. */
+    public void deleteDay(LocalDate day) {
+        daily.remove(day.toString());
+        save();
+        InteractionLog.deleteDay(day);
+    }
+
+    /** Deletes every day in the range, inclusive, counts and logs both. */
+    public void deleteRange(LocalDate start, LocalDate end) {
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            daily.remove(day.toString());
+        }
+        save();
+        InteractionLog.deleteRange(start, end);
     }
 
     /** The total for the period the HUD is set to show. */
@@ -170,11 +200,7 @@ public final class HelpData {
 
     private void save() {
         try {
-            Path file = path();
-            Files.createDirectories(file.getParent());
-            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(temp, GSON.toJson(this));
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            JsonFiles.write(path(), GSON.toJson(this));
         } catch (Exception e) {
             // Keep playing even if the disk write fails. Data stays in memory.
         }

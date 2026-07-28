@@ -15,6 +15,7 @@ public final class StaffTrackerClient implements ClientModInitializer {
     public void onInitializeClient() {
         StaffTrackerConfig.load();
         HelpData.load();
+        MessageWatcher.register();
         CountKeyListener.register();
         CounterHud.register();
     }

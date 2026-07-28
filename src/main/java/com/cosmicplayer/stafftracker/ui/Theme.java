@@ -1,65 +1,55 @@
 package com.cosmicplayer.stafftracker.ui;
 
 import com.cosmicplayer.stafftracker.StaffTrackerClient;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.StyleSpriteSource;
-import net.minecraft.text.Text;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix3x2fStack;
 
-/** Shared colors, fonts, and drawing helpers for the mod's UI. */
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Shared colors, font sizes, and shape drawing for the mod's UI.
+ * Text itself renders through TextPainter.
+ *
+ * Rounded corners come from small circle textures, drawn once with Java's
+ * anti aliasing and cached. Their soft edges keep every shape smooth on
+ * any display, where plain fills would show hard pixel steps.
+ */
 public final class Theme {
-    public static final int PANEL = 0xF20E0E13;
+    public static final int PANEL = 0xF2090909;
     public static final int TEXT = 0xFFF2F2F5;
-    public static final int TEXT_DIM = 0xFF8A8A96;
+    public static final int TEXT_DIM = 0xFF8C8C8C;
     public static final int DANGER = 0xFFCF6060;
     public static final int ACCENT = 0xFFB158E6;
     public static final int HOVER = 0x12FFFFFF;
     public static final int CHIP = 0x1FFFFFFF;
-    public static final int TRACK = 0xFF33333E;
-    public static final int TRACK_DARK = 0xFF19191F;
+    public static final int TRACK = 0xFF2E2E2E;
+    public static final int TRACK_DARK = 0xFF141414;
     public static final int RAIL = 0x08FFFFFF;
-    public static final int THUMB = 0xFF3A3A45;
+    public static final int THUMB = 0xFF3A3A3A;
 
-    /**
-     * Corner curves are drawn at this subdivision so they rasterize with
-     * sub pixel steps. It also makes it look smooth and not pixelated.
-     */
-    private static final int SMOOTH = 4;
+    /** The two text sizes the UI uses, in GUI units. */
+    public static final float FONT_BODY = 8.0f;
+    public static final float FONT_SMALL = 7.0f;
 
-    private static final StyleSpriteSource.Font FONT = new StyleSpriteSource.Font(StaffTrackerClient.id("clean"));
-    private static final StyleSpriteSource.Font FONT_SMALL = new StyleSpriteSource.Font(StaffTrackerClient.id("clean_small"));
-    private static final StyleSpriteSource.Font FONT_BOLD = new StyleSpriteSource.Font(StaffTrackerClient.id("clean_bold"));
+    /** Baked circle textures by radius in real pixels. Rings key on radius and thickness. */
+    private static final Map<Integer, Identifier> circles = new HashMap<>();
+    private static final Map<Integer, Identifier> rings = new HashMap<>();
+    private static int nextShapeId = 0;
 
     private Theme() {
-    }
-
-    /** Text in the mod's clean font. */
-    public static MutableText text(String value) {
-        return Text.literal(value).styled(style -> style.withFont(FONT));
-    }
-
-    /** Caption sized text for labels, headers, and secondary info. */
-    public static MutableText textSmall(String value) {
-        return Text.literal(value).styled(style -> style.withFont(FONT_SMALL));
-    }
-
-    /** SemiBold text. Used where thin strokes would be hard to read, like the HUD. */
-    public static MutableText textBold(String value) {
-        return Text.literal(value).styled(style -> style.withFont(FONT_BOLD));
-    }
-
-    /**
-     * SemiBold text at an exact font size from the bundled ladder, sizes 4
-     * through 40. The HUD uses these so text renders at native resolution
-     * instead of being scale transformed, which looks broken on standard
-     * displays because font textures are sampled without filtering.
-     */
-    public static MutableText textBoldSized(String value, int size) {
-        StyleSpriteSource.Font font = new StyleSpriteSource.Font(StaffTrackerClient.id("clean_bold_" + size));
-        return Text.literal(value).styled(style -> style.withFont(font));
     }
 
     /** Draws a flat rectangle with smooth rounded corners. */
@@ -70,18 +60,27 @@ public final class Theme {
     /** Rounded rectangle where each vertical edge can be square instead. Used by the dock rail. */
     public static void roundedRectEdges(DrawContext context, int x, int y, int width, int height, int radius,
                                         int color, boolean roundLeft, boolean roundRight) {
-        int r = Math.min(radius, Math.min(width, height) / 2) * SMOOTH;
-        Matrix3x2fStack matrices = beginSmooth(context, x, y);
-        int w = width * SMOOTH;
-        int h = height * SMOOTH;
+        float density = TextPainter.density();
+        int w = Math.round(width * density);
+        int h = Math.round(height * density);
+        int r = pixelRadius(radius, width, height, density, w, h);
+        Identifier circle = circle(r);
 
+        // Three fills cover the straight parts without overlapping, which
+        // matters because most of these colors are translucent.
+        Matrix3x2fStack matrices = beginPixelSpace(context, x, y, density);
         context.fill(0, r, w, h - r, color);
-        for (int i = 0; i < r; i++) {
-            int inset = cornerInset(r, i);
-            int left = roundLeft ? inset : 0;
-            int right = roundRight ? inset : 0;
-            context.fill(left, i, w - right, i + 1, color);
-            context.fill(left, h - i - 1, w - right, h - i, color);
+        int left = roundLeft ? r : 0;
+        int right = roundRight ? r : 0;
+        context.fill(left, 0, w - right, r, color);
+        context.fill(left, h - r, w - right, h, color);
+        if (roundLeft) {
+            corner(context, circle, 0, 0, 0, 0, r, color);
+            corner(context, circle, 0, h - r, 0, r, r, color);
+        }
+        if (roundRight) {
+            corner(context, circle, w - r, 0, r, 0, r, color);
+            corner(context, circle, w - r, h - r, r, r, r, color);
         }
         matrices.popMatrix();
     }
@@ -93,83 +92,96 @@ public final class Theme {
 
     /**
      * A rounded border with an even stroke. Thickness is in GUI pixels, so
-     * 0.5 reads as a hairline. Each row fills the gap between the outer
-     * shape and the same shape inset by the stroke, which keeps the corners
-     * the same thickness as the straight sides. Keep this in mind for future changes.
+     * 0.5 reads as a hairline. The straight sides are plain fills and the
+     * corners come from a baked ring texture, so the whole border stays
+     * smooth at one even thickness.
      */
     public static void roundedRectOutline(DrawContext context, int x, int y, int width, int height, int radius,
                                           int color, float thickness) {
-        int r = Math.min(radius, Math.min(width, height) / 2) * SMOOTH;
-        int t = Math.max(1, Math.round(SMOOTH * thickness));
-        int w = width * SMOOTH;
-        int h = height * SMOOTH;
-        int innerRadius = Math.max(0, r - t);
+        float density = TextPainter.density();
+        int w = Math.round(width * density);
+        int h = Math.round(height * density);
+        int r = pixelRadius(radius, width, height, density, w, h);
+        int t = MathHelper.clamp(Math.round(thickness * density), 1, r);
+        Identifier ring = ring(r, t);
 
-        Matrix3x2fStack matrices = beginSmooth(context, x, y);
-        for (int i = 0; i < h; i++) {
-            int outer = ringInset(i, h, r);
-            if (i < t || i >= h - t) {
-                context.fill(outer, i, w - outer, i + 1, color);
-                continue;
-            }
-            int inner = Math.max(outer + t, t + ringInset(i - t, h - 2 * t, innerRadius));
-            inner = Math.min(inner, w / 2);
-            context.fill(outer, i, inner, i + 1, color);
-            context.fill(w - inner, i, w - outer, i + 1, color);
-        }
+        Matrix3x2fStack matrices = beginPixelSpace(context, x, y, density);
+        context.fill(r, 0, w - r, t, color);
+        context.fill(r, h - t, w - r, h, color);
+        context.fill(0, r, t, h - r, color);
+        context.fill(w - t, r, w, h - r, color);
+        corner(context, ring, 0, 0, 0, 0, r, color);
+        corner(context, ring, w - r, 0, r, 0, r, color);
+        corner(context, ring, 0, h - r, 0, r, r, color);
+        corner(context, ring, w - r, h - r, r, r, r, color);
         matrices.popMatrix();
     }
 
-    /** Horizontal inset of a rounded shape at the given row. Zero along the straight sides. */
-    private static int ringInset(int row, int height, int radius) {
-        if (row < radius) {
-            return cornerInset(radius, row);
-        }
-        if (row >= height - radius) {
-            return cornerInset(radius, height - 1 - row);
-        }
-        return 0;
+    /** The corner radius in real pixels, capped so opposite corners never overlap. */
+    private static int pixelRadius(int radius, int width, int height, float density, int w, int h) {
+        int r = Math.round(Math.min(radius, Math.min(width, height) / 2) * density);
+        return MathHelper.clamp(r, 1, Math.min(w, h) / 2);
     }
 
-    /** Scales the matrix down so fills drawn in SMOOTH units land on sub pixel bounds. */
-    private static Matrix3x2fStack beginSmooth(DrawContext context, int x, int y) {
+    /** Moves to the shape's corner and scales down so drawing lands on real screen pixels. */
+    private static Matrix3x2fStack beginPixelSpace(DrawContext context, int x, int y, float density) {
         Matrix3x2fStack matrices = context.getMatrices();
         matrices.pushMatrix();
         matrices.translate(x, y);
-        matrices.scale(1.0f / SMOOTH, 1.0f / SMOOTH);
+        matrices.scale(1.0f / density, 1.0f / density);
         return matrices;
     }
 
-    private static int cornerInset(int r, int row) {
-        double distance = r - row - 0.5;
-        return r - (int) Math.round(Math.sqrt(r * r - distance * distance));
+    /** Draws one quadrant of a circle texture, tinted. The u and v pick the quadrant. */
+    private static void corner(DrawContext context, Identifier texture, int x, int y, int u, int v, int r, int color) {
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, r, r, r, r, r * 2, r * 2, color);
     }
 
-    public static void drawCenteredText(DrawContext context, TextRenderer textRenderer, Text text, int centerX, int y, int color) {
-        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, color, false);
+    /** A filled white circle texture for the given radius, baked on first use. */
+    private static Identifier circle(int radius) {
+        return circles.computeIfAbsent(radius, r -> {
+            BufferedImage image = new BufferedImage(r * 2, r * 2, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics = smoothGraphics(image);
+            graphics.fill(new Ellipse2D.Float(0, 0, r * 2, r * 2));
+            graphics.dispose();
+            return register(image);
+        });
     }
 
-    /**
-     * Centered text over a soft dark glow. Two rings of low alpha passes
-     * blend into a feathered shadow, so the text stays readable over any
-     * world without a hard outline or a background box.
-     * COMEBACK: Come up with a better idea, this looks like shit.
-     */
-    public static void drawCenteredHaloText(DrawContext context, TextRenderer textRenderer, Text text, int centerX, int y, int color) {
-        int x = centerX - textRenderer.getWidth(text) / 2;
-        Matrix3x2fStack matrices = context.getMatrices();
-        float[] radii = {0.7f, 1.5f};
-        int[] alphas = {0x38000000, 0x1E000000};
-        for (int ring = 0; ring < radii.length; ring++) {
-            for (int i = 0; i < 8; i++) {
-                double angle = Math.PI / 4 * i;
-                matrices.pushMatrix();
-                matrices.translate((float) (Math.cos(angle) * radii[ring]), (float) (Math.sin(angle) * radii[ring]));
-                context.drawText(textRenderer, text, x, y, alphas[ring], false);
-                matrices.popMatrix();
+    /** A white circle stroke texture for the given radius and thickness, baked on first use. */
+    private static Identifier ring(int radius, int thickness) {
+        return rings.computeIfAbsent(radius * 1000 + thickness, key -> {
+            BufferedImage image = new BufferedImage(radius * 2, radius * 2, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics = smoothGraphics(image);
+            graphics.fill(new Ellipse2D.Float(0, 0, radius * 2, radius * 2));
+            // Punch out the middle so just the stroke is left.
+            graphics.setComposite(AlphaComposite.Clear);
+            graphics.fill(new Ellipse2D.Float(thickness, thickness,
+                    radius * 2 - thickness * 2, radius * 2 - thickness * 2));
+            graphics.dispose();
+            return register(image);
+        });
+    }
+
+    private static Graphics2D smoothGraphics(BufferedImage image) {
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.setColor(Color.WHITE);
+        return graphics;
+    }
+
+    /** Uploads the image as a game texture and returns its id. */
+    private static Identifier register(BufferedImage image) {
+        NativeImage nativeImage = new NativeImage(image.getWidth(), image.getHeight(), true);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                nativeImage.setColorArgb(x, y, image.getRGB(x, y));
             }
         }
-        context.drawText(textRenderer, text, x, y, color, false);
+        Identifier id = StaffTrackerClient.id("shape/" + nextShapeId++);
+        MinecraftClient.getInstance().getTextureManager().registerTexture(id,
+                new NativeImageBackedTexture(id::toString, nativeImage));
+        return id;
     }
 
     public static int withAlpha(int color, int alpha) {

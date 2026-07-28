@@ -3,8 +3,8 @@ package com.cosmicplayer.stafftracker.hud;
 import com.cosmicplayer.stafftracker.HelpData;
 import com.cosmicplayer.stafftracker.StaffTrackerClient;
 import com.cosmicplayer.stafftracker.StaffTrackerConfig;
-import com.cosmicplayer.stafftracker.StaffTrackerConfig.HudView;
 import com.cosmicplayer.stafftracker.ui.Format;
+import com.cosmicplayer.stafftracker.ui.TextPainter;
 import com.cosmicplayer.stafftracker.ui.Theme;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
@@ -21,39 +21,23 @@ import org.joml.Matrix3x2fStack;
  * for the period picked in settings, with an optional label above it.
  * Might just remove the label later.
  *
- * The HUD size setting never scale transforms text. Fractional scaling
- * drops pixel rows on standard displays because font textures are sampled
- * without filtering, so the setting picks real font sizes from the bundled
- * ladder and everything draws at native resolution on whole pixels.
+ * TextPainter draws any size sharp, so the HUD size setting just scales
+ * the font sizes and paddings. Nothing gets stretched.
  */
 public final class CounterHud {
-    private static final int BACKGROUND = 0x8C0E0E14;
+    private static final int BACKGROUND = 0x8C090909;
     private static final int BORDER = 0x3CFFFFFF;
     private static final int DIVIDER = 0x2EFFFFFF;
     private static final int FLASH_MS = 400;
 
-    // Base metrics at 100% size. Everything scales from these, rounded to
-    // whole pixels. Caps in Inter are about 73% of the font size, and the
-    // game puts every text baseline 7 pixels below the draw position.
-    private static final int BASE_LABEL_SIZE = 8;
-    private static final int BASE_COUNT_SIZE = 20;
+    // Base sizes at 100%. Everything scales from these.
+    private static final float BASE_LABEL_SIZE = 8.0f;
+    private static final float BASE_COUNT_SIZE = 20.0f;
     private static final int BASE_PADDING = 7;
     private static final int BASE_RADIUS = 6;
     private static final int BASE_MIN_WIDTH = 46;
-    private static final float CAP_RATIO = 0.73f;
-    private static final int FONT_BASELINE = 7;
 
     private static long flashStart = -1;
-
-    // Styled Text objects are immutable, so the label and count are cached
-    // instead of being rebuilt every frame.
-    private static Text labelText;
-    private static HudView labelView;
-    private static int labelSizeUsed = -1;
-    private static Text countText;
-    private static int countValue = -1;
-    private static HudView countView;
-    private static int countSizeUsed = -1;
 
     /** Set by the position editor so the real HUD does not draw under the preview. */
     public static boolean suppressed = false;
@@ -72,7 +56,7 @@ public final class CounterHud {
     public static void onIncrement(MinecraftClient client) {
         flashStart = Util.getMeasuringTimeMs();
         if (!StaffTrackerConfig.get().hudEnabled && client.player != null) {
-            Text message = Theme.text("Helped +1  ·  " + Format.count(HelpData.get().today()) + " today");
+            Text message = Text.literal("Helped +1  ·  " + Format.count(HelpData.get().today()) + " today");
             client.player.sendMessage(message, true);
         }
     }
@@ -88,24 +72,24 @@ public final class CounterHud {
 
     /** Draws the counter panel. Shared with the position editor preview. */
     public static void renderPanel(DrawContext context, MinecraftClient client, boolean allowFlash) {
-        int[] size = panelSize(client);
+        int[] size = panelSize();
         int[] position = panelPosition(client, size);
 
         Matrix3x2fStack matrices = context.getMatrices();
         matrices.pushMatrix();
         matrices.translate(position[0], position[1]);
-        drawPanel(context, client, size[0], size[1], allowFlash);
+        drawPanel(context, size[0], size[1], allowFlash);
         matrices.popMatrix();
     }
 
     /** Panel bounds in screen pixels: x, y, width, height. Used for dragging. */
     public static float[] panelBounds(MinecraftClient client) {
-        int[] size = panelSize(client);
+        int[] size = panelSize();
         int[] position = panelPosition(client, size);
         return new float[]{position[0], position[1], size[0], size[1]};
     }
 
-    private static void drawPanel(DrawContext context, MinecraftClient client, int width, int height, boolean allowFlash) {
+    private static void drawPanel(DrawContext context, int width, int height, boolean allowFlash) {
         StaffTrackerConfig config = StaffTrackerConfig.get();
         int padding = scaled(BASE_PADDING, 3);
         int radius = scaled(BASE_RADIUS, 3);
@@ -114,20 +98,16 @@ public final class CounterHud {
 
         int y = padding;
         if (config.showLabel) {
-            int labelSize = labelSize();
-            context.drawText(client.textRenderer, labelText(config.hudView),
-                    padding, y + capHeight(labelSize) - FONT_BASELINE, Theme.TEXT_DIM, false);
-            y += capHeight(labelSize) + scaled(3, 2);
+            TextPainter.draw(context, config.hudView.hudLabel, padding, y, labelSize(), Theme.TEXT_DIM, true);
+            y += labelCapHeight() + scaled(3, 2);
             context.fill(padding, y, width - padding, y + 1, DIVIDER);
             y += 1 + scaled(5, 3);
         }
 
-        // The count always centers, with or without the label.
-        int countSize = countSize();
-        Text count = countText(config.hudView);
-        int countX = (width - client.textRenderer.getWidth(count)) / 2;
-        context.drawText(client.textRenderer, count,
-                countX, y + capHeight(countSize) - FONT_BASELINE, Theme.TEXT, false);
+        // The count always centers, with or without the label. W Rtzy suggestion.
+        String count = Format.count(HelpData.get().countFor(config.hudView));
+        float countX = (width - TextPainter.width(count, countSize(), true)) / 2.0f;
+        TextPainter.draw(context, count, countX, y, countSize(), Theme.TEXT, true);
 
         if (allowFlash && flashStart > 0) {
             float t = (Util.getMeasuringTimeMs() - flashStart) / (float) FLASH_MS;
@@ -139,58 +119,37 @@ public final class CounterHud {
     }
 
     /** Panel size in whole pixels: width, height. */
-    private static int[] panelSize(MinecraftClient client) {
+    private static int[] panelSize() {
         StaffTrackerConfig config = StaffTrackerConfig.get();
         int padding = scaled(BASE_PADDING, 3);
-        Text count = countText(config.hudView);
+        String count = Format.count(HelpData.get().countFor(config.hudView));
 
-        int labelWidth = config.showLabel ? client.textRenderer.getWidth(labelText(config.hudView)) : 0;
-        int countWidth = client.textRenderer.getWidth(count);
-        int width = Math.max(scaled(BASE_MIN_WIDTH, 20), padding * 2 + Math.max(labelWidth, countWidth));
+        float labelWidth = config.showLabel ? TextPainter.width(config.hudView.hudLabel, labelSize(), true) : 0;
+        float countWidth = TextPainter.width(count, countSize(), true);
+        int width = Math.max(scaled(BASE_MIN_WIDTH, 20),
+                padding * 2 + Math.round(Math.max(labelWidth, countWidth)));
 
-        int height = padding * 2 + capHeight(countSize());
+        int height = padding * 2 + Math.round(TextPainter.capHeight(countSize()));
         if (config.showLabel) {
-            height += capHeight(labelSize()) + scaled(3, 2) + 1 + scaled(5, 3);
+            height += labelCapHeight() + scaled(3, 2) + 1 + scaled(5, 3);
         }
         return new int[]{width, height};
     }
 
-    private static int labelSize() {
-        return MathHelper.clamp(scaled(BASE_LABEL_SIZE, 4), 4, 16);
+    private static float labelSize() {
+        return Math.max(4.0f, BASE_LABEL_SIZE * StaffTrackerConfig.get().hudScale);
     }
 
-    private static int countSize() {
-        return MathHelper.clamp(scaled(BASE_COUNT_SIZE, 10), 10, 40);
+    private static float countSize() {
+        return Math.max(10.0f, BASE_COUNT_SIZE * StaffTrackerConfig.get().hudScale);
     }
 
-    private static int capHeight(int fontSize) {
-        return Math.round(fontSize * CAP_RATIO);
+    private static int labelCapHeight() {
+        return Math.round(TextPainter.capHeight(labelSize()));
     }
 
     private static int scaled(int base, int minimum) {
         return Math.max(minimum, Math.round(base * StaffTrackerConfig.get().hudScale));
-    }
-
-    private static Text labelText(HudView view) {
-        int size = labelSize();
-        if (labelText == null || view != labelView || size != labelSizeUsed) {
-            labelView = view;
-            labelSizeUsed = size;
-            labelText = Theme.textBoldSized(view.hudLabel, size);
-        }
-        return labelText;
-    }
-
-    private static Text countText(HudView view) {
-        int value = HelpData.get().countFor(view);
-        int size = countSize();
-        if (countText == null || value != countValue || view != countView || size != countSizeUsed) {
-            countValue = value;
-            countView = view;
-            countSizeUsed = size;
-            countText = Theme.textBoldSized(Format.count(value), size);
-        }
-        return countText;
     }
 
     /** Panel position in whole screen pixels: x, y. */

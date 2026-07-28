@@ -1,8 +1,7 @@
 package com.cosmicplayer.stafftracker.ui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 
 /**
  * A flat text button. A soft pill appears behind it on hover or keyboard focus.
@@ -19,9 +18,11 @@ public class CleanButton extends CleanWidget {
     private final PressAction action;
     private Style style = Style.NORMAL;
     private boolean glass;
+    private String label;
 
     public CleanButton(int x, int y, int width, int height, String label, PressAction action) {
-        super(x, y, width, height, Theme.text(label));
+        super(x, y, width, height, Text.literal(label));
+        this.label = label;
         this.action = action;
     }
 
@@ -30,14 +31,15 @@ public class CleanButton extends CleanWidget {
         return this;
     }
 
-    /** Dark translucant fill with a faint border, like tinted glass over the panel. */
+    /** Dark translucent fill with a faint border, like tinted glass over the panel. */
     public CleanButton glass() {
         this.glass = true;
         return this;
     }
 
     public void setLabel(String label) {
-        setMessage(Theme.text(label));
+        this.label = label;
+        setMessage(Text.literal(label));
     }
 
     @Override
@@ -60,8 +62,7 @@ public class CleanButton extends CleanWidget {
             case ACCENT -> Theme.ACCENT;
             case DANGER -> Theme.DANGER;
         };
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        int textY = getY() + (height - 8) / 2 + 1;
-        Theme.drawCenteredText(context, textRenderer, getMessage(), getX() + width / 2, textY, color);
+        TextPainter.drawCenteredInRow(context, label, getX() + width / 2.0f, getY(), height,
+                Theme.FONT_BODY, color, false);
     }
 }

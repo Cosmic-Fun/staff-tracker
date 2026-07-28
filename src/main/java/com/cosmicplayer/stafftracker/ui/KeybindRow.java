@@ -1,9 +1,9 @@
 package com.cosmicplayer.stafftracker.ui;
 
+import com.cosmicplayer.stafftracker.CountKeyListener;
 import com.cosmicplayer.stafftracker.StaffTrackerConfig;
 import com.cosmicplayer.stafftracker.StaffTrackerConfig.CountKey;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.input.KeyInput;
@@ -21,11 +21,13 @@ import java.util.Locale;
 public class KeybindRow extends CleanWidget {
     private static final int CHIP_HEIGHT = 13;
 
+    private final String label;
     private boolean listening;
     private int heldSideButtons;
 
     public KeybindRow(int x, int y, int width, int height, String label) {
-        super(x, y, width, height, Theme.text(label));
+        super(x, y, width, height, Text.literal(label));
+        this.label = label;
     }
 
     public boolean isListening() {
@@ -76,9 +78,9 @@ public class KeybindRow extends CleanWidget {
             heldSideButtons = down ? heldSideButtons | bit : heldSideButtons & ~bit;
             if (down && !wasDown) {
                 apply(CountKey.MOUSE, button,
-                        eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT),
-                        eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL),
-                        eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT));
+                        CountKeyListener.eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT),
+                        CountKeyListener.eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL),
+                        CountKeyListener.eitherKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT));
                 return;
             }
         }
@@ -113,11 +115,6 @@ public class KeybindRow extends CleanWidget {
                 || key == GLFW.GLFW_KEY_LEFT_SUPER || key == GLFW.GLFW_KEY_RIGHT_SUPER;
     }
 
-    private static boolean eitherKeyDown(long window, int left, int right) {
-        return GLFW.glfwGetKey(window, left) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, right) == GLFW.GLFW_PRESS;
-    }
-
     private static long window() {
         return MinecraftClient.getInstance().getWindow().getHandle();
     }
@@ -146,18 +143,18 @@ public class KeybindRow extends CleanWidget {
         if (listening) {
             pollSideButtons();
         }
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        context.drawText(textRenderer, getMessage(), getX() + 2, getY() + (height - 8) / 2 + 1, Theme.TEXT, false);
+        TextPainter.drawInRow(context, label, getX() + 2, getY(), height, Theme.FONT_BODY, Theme.TEXT, false);
 
-        Text chipText = listening ? Theme.textSmall("Select a Keybind") : Theme.textSmall(bindLabel());
+        String chipText = listening ? "Select a Keybind" : bindLabel();
         int chipTextColor = listening ? Theme.ACCENT : Theme.TEXT;
 
         // The chip sizes itself to the text so the label always sits centered.
-        int textWidth = textRenderer.getWidth(chipText);
+        int textWidth = Math.round(TextPainter.width(chipText, Theme.FONT_SMALL, false));
         int chipWidth = Math.max(textWidth + 12, CHIP_HEIGHT + 4);
         int chipX = getX() + width - 2 - chipWidth;
         int chipY = getY() + (height - CHIP_HEIGHT) / 2;
         Theme.roundedRect(context, chipX, chipY, chipWidth, CHIP_HEIGHT, 3, Theme.CHIP);
-        Theme.drawCenteredText(context, textRenderer, chipText, chipX + chipWidth / 2, chipY + 2, chipTextColor);
+        TextPainter.drawCenteredInRow(context, chipText, chipX + chipWidth / 2.0f, chipY, CHIP_HEIGHT,
+                Theme.FONT_SMALL, chipTextColor, false);
     }
 }

@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 /**
  * Base for the mod's flat widgets. Vanilla's PressableWidget forces the
  * vanilla button look, so this adds simple press handling on top of
- * ClickableWidget instead. Enter and Space activate focused the widgets.
+ * ClickableWidget instead. Enter and Space activate the focused widget.
  */
 public abstract class CleanWidget extends ClickableWidget {
     protected CleanWidget(int x, int y, int width, int height, Text message) {

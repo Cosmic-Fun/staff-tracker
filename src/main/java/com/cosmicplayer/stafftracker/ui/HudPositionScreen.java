@@ -20,7 +20,7 @@ public class HudPositionScreen extends Screen {
     private float dragOffsetY;
 
     public HudPositionScreen(Screen parent) {
-        super(Theme.text("Adjust HUD"));
+        super(Text.literal("Adjust HUD"));
         this.parent = parent;
     }
 
@@ -43,13 +43,27 @@ public class HudPositionScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
-        // A soft halo treis to keep the hint readable over bright terrain without a backdrop.
-        Text heading = Theme.textBold("Drag the counter to move it.");
+        // A soft glow tries to keep the hint readable over bright terrain without a backdrop.
         int size = Math.round(StaffTrackerConfig.get().hudScale * 100);
-        Text hint = Theme.textSmall("Scroll to change size  ·  " + size + "%");
-        Theme.drawCenteredHaloText(context, this.textRenderer, heading, this.width / 2, 14, Theme.TEXT);
-        Theme.drawCenteredHaloText(context, this.textRenderer, hint, this.width / 2, 26, 0xFFD4D4DC);
+        drawGlowText(context, "Drag the counter to move it.", 14, Theme.FONT_BODY, Theme.TEXT, true);
+        drawGlowText(context, "Scroll to change size  ·  " + size + "%", 26, Theme.FONT_SMALL, 0xFFD4D4DC, false);
         CounterHud.renderPanel(context, this.client, false);
+    }
+
+    /** Centered text over two rings of translucent copies, which blend into a glow. */
+    private void drawGlowText(DrawContext context, String text, float y, float size, int color, boolean bold) {
+        float centerX = this.width / 2.0f;
+        float[] radii = {0.7f, 1.5f};
+        int[] alphas = {0x38000000, 0x1E000000};
+        for (int ring = 0; ring < radii.length; ring++) {
+            for (int i = 0; i < 8; i++) {
+                double angle = Math.PI / 4 * i;
+                float dx = (float) (Math.cos(angle) * radii[ring]);
+                float dy = (float) (Math.sin(angle) * radii[ring]);
+                TextPainter.drawCentered(context, text, centerX + dx, y + dy, size, alphas[ring], bold);
+            }
+        }
+        TextPainter.drawCentered(context, text, centerX, y, size, color, bold);
     }
 
     @Override

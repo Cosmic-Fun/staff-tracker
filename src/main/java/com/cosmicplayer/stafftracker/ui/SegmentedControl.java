@@ -1,15 +1,14 @@
 package com.cosmicplayer.stafftracker.ui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.function.IntConsumer;
 
 /**
- * A switch with a few options in a track. The thumb slides to the
+ * A switch with a few options in a rounded track. The thumb slides to the
  * selected one. With a label it renders as a settings row with the track
  * on the right. Without one the track centers in the widget bounds.
  */
@@ -25,7 +24,7 @@ public class SegmentedControl extends CleanWidget {
 
     public SegmentedControl(int x, int y, int width, int height, String label, String[] options,
                             int selected, IntConsumer onSelect) {
-        super(x, y, width, height, Theme.text(label != null ? label : options[selected]));
+        super(x, y, width, height, Text.literal(label != null ? label : options[selected]));
         this.label = label;
         this.options = options;
         this.selected = selected;
@@ -45,9 +44,8 @@ public class SegmentedControl extends CleanWidget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
         if (label != null) {
-            context.drawText(textRenderer, getMessage(), getX() + 2, getY() + (height - 8) / 2 + 1, Theme.TEXT, false);
+            TextPainter.drawInRow(context, label, getX() + 2, getY(), height, Theme.FONT_BODY, Theme.TEXT, false);
         }
 
         int trackX = trackX();
@@ -61,7 +59,7 @@ public class SegmentedControl extends CleanWidget {
             if (i == selected || i == selected + 1) {
                 continue;
             }
-            int lineX = trackX + i * segmentWidth();
+            int lineX = trackX + i * segmentWidth;
             context.fill(lineX, trackY + 4, lineX + 1, trackY + TRACK_HEIGHT - 4, 0x2EFFFFFF);
         }
 
@@ -72,9 +70,10 @@ public class SegmentedControl extends CleanWidget {
                 thumbHeight, 3, Theme.THUMB);
 
         for (int i = 0; i < options.length; i++) {
-            int centerX = trackX + i * segmentWidth + segmentWidth / 2;
+            float centerX = trackX + i * segmentWidth + segmentWidth / 2.0f;
             int color = i == selected ? Theme.TEXT : Theme.TEXT_DIM;
-            Theme.drawCenteredText(context, textRenderer, Theme.textSmall(options[i]), centerX, trackY + 3, color);
+            TextPainter.drawCenteredInRow(context, options[i], centerX, trackY, TRACK_HEIGHT,
+                    Theme.FONT_SMALL, color, false);
         }
     }
 
@@ -84,7 +83,7 @@ public class SegmentedControl extends CleanWidget {
                 : getX() + width - trackWidth();
     }
 
-    /** Always a multiple of the segment width, so no remainder pools on one side. */
+    /** Always a multiple of the segment width, so no leftover pixels pile up on one side. */
     private int trackWidth() {
         return segmentWidth() * options.length;
     }
@@ -93,11 +92,10 @@ public class SegmentedControl extends CleanWidget {
         if (label == null) {
             return width / options.length;
         }
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        int widest = 0;
+        float widest = 0;
         for (String option : options) {
-            widest = Math.max(widest, textRenderer.getWidth(Theme.textSmall(option)));
+            widest = Math.max(widest, TextPainter.width(option, Theme.FONT_SMALL, false));
         }
-        return widest + 16;
+        return Math.round(widest) + 16;
     }
 }

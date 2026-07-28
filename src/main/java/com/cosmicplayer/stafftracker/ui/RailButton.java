@@ -1,18 +1,19 @@
 package com.cosmicplayer.stafftracker.ui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 
 /** One item in the dock's left rail. A dot, a single line label, and a pill when active. */
 public class RailButton extends CleanWidget {
     private static final int DOT_SIZE = 3;
 
+    private final String label;
     private final Runnable action;
     private final boolean active;
 
     public RailButton(int x, int y, int width, int height, String label, boolean active, Runnable action) {
-        super(x, y, width, height, Theme.text(label));
+        super(x, y, width, height, Text.literal(label));
+        this.label = label;
         this.active = active;
         this.action = action;
     }
@@ -32,7 +33,6 @@ public class RailButton extends CleanWidget {
         int dotY = getY() + (height - DOT_SIZE) / 2;
         Theme.roundedRect(context, getX() + 7, dotY, DOT_SIZE, DOT_SIZE, 1, dotColor);
 
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        context.drawText(textRenderer, getMessage(), getX() + 14, getY() + (height - 8) / 2 + 1, textColor, false);
+        TextPainter.drawInRow(context, label, getX() + 14, getY(), height, Theme.FONT_BODY, textColor, false);
     }
 }

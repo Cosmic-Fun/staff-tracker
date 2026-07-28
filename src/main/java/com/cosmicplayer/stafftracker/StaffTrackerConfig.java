@@ -8,7 +8,6 @@ import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 /**
  * User settings. Saved to config/stafftracker/settings.json.
@@ -86,11 +85,7 @@ public final class StaffTrackerConfig {
 
     public static void save() {
         try {
-            Path file = path();
-            Files.createDirectories(file.getParent());
-            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(temp, GSON.toJson(instance));
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            JsonFiles.write(path(), GSON.toJson(instance));
         } catch (Exception e) {
             // A failed settings write is not worth crashing the game over.
         }

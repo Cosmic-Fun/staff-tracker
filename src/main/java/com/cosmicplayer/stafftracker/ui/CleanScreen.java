@@ -2,6 +2,7 @@ package com.cosmicplayer.stafftracker.ui;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
 /**
@@ -13,6 +14,7 @@ public abstract class CleanScreen extends Screen {
     private static final int OPEN_SLIDE_DISTANCE = 12;
 
     protected final Screen parent;
+    protected final String titleLabel;
     protected int panelWidth = 260;
     protected int panelHeight = 200;
 
@@ -20,7 +22,8 @@ public abstract class CleanScreen extends Screen {
     private boolean slideActive;
 
     protected CleanScreen(String title, Screen parent) {
-        super(Theme.text(title));
+        super(Text.literal(title));
+        this.titleLabel = title;
         this.parent = parent;
     }
 
@@ -56,7 +59,8 @@ public abstract class CleanScreen extends Screen {
 
         Theme.roundedRect(context, panelX(), panelY(), panelWidth, panelHeight, 6, Theme.PANEL);
         if (showTitle()) {
-            Theme.drawCenteredText(context, this.textRenderer, this.title, this.width / 2, panelY() + 10, Theme.TEXT);
+            TextPainter.drawCentered(context, titleLabel, this.width / 2.0f, panelY() + 10,
+                    Theme.FONT_BODY, Theme.TEXT, true);
         }
     }
 
