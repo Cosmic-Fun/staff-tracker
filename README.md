@@ -1,4 +1,5 @@
-<h1>Staff Tracker <a href="https://github.com/Cosmic-Fun/staff-tracker/releases/latest/download/stafftracker.jar"><img align="right" src="https://img.shields.io/badge/Download-stafftracker.jar-B158E6?style=for-the-badge" alt="Download"></a></h1>
+<!-- Release checklist: every release, update this button's link and label to the new jar version. -->
+<h1>Staff Tracker <a href="https://github.com/Cosmic-Fun/staff-tracker/releases/download/v1.0.5/stafftracker-1.0.5.jar"><img align="right" src="https://img.shields.io/badge/Download-stafftracker--1.0.5.jar-B158E6?style=for-the-badge" alt="Download"></a></h1>
 
 A client side helper counter for staff. Press one key when you help a player and the mod keeps score. It also remembers who you helped and what the conversation was.
 
@@ -25,7 +26,7 @@ A client side helper counter for staff. Press one key when you help a player and
 
 1. Install Fabric Loader 0.19.3 or newer for Minecraft 1.21.11.
 2. Put Fabric API in your mods folder.
-3. Hit the download button up top and drop `stafftracker.jar` in next to it.
+3. Hit the download button up top and drop the Staff Tracker jar in next to it.
 
 ## Using it
 
