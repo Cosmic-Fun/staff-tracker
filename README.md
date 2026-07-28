@@ -9,7 +9,7 @@ A client side helper counter for staff. Press one key when you help a player and
 - When you trigger a count, the mod looks at your recent private messages, figures out who you were helping, and saves the conversation from the last thirty minutes along with the planet each of you was on.
 - History is browsable by day, week, or month. Click into a day to see every player you helped that day.
 - A search box finds every logged interaction with a player by name.
-- Anything can be deleted: one interaction, a day, a week, or a whole month. Every delete first shows you exactly what is about to go. Undo takes one count off today and shows the conversation it removes.
+- Anything can be deleted: one interaction, a day, a week, or a whole month. Every delete first shows you exactly what is about to go. Undo takes one count off the current day and shows the conversation it removes.
 
 ## Preview
 
@@ -33,7 +33,7 @@ A client side helper counter for staff. Press one key when you help a player and
 - The default keybind is `H`. Change it in settings. Mouse buttons and combos like `Ctrl Shift H` work too.
 - Open the pause menu and click **Staff Tracker** in the top right for settings and history.
 - Counts roll over at midnight in your own time zone. Weeks run Sunday to Saturday.
-- **Adjust HUD** lets you drag the counter anywhere and scroll to resize it in one percent steps.
+- **Adjust HUD** lets you drag the counter anywhere and scroll to resize it in one percent increments.
 
 ## Your data
 
